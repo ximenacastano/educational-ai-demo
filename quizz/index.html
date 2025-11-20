@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quiz Educativo</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: start;
+        min-height: 100vh;
+        padding-top: 30px;
+    }
+
+    #app {
+        background: white;
+        width: 95%;
+        max-width: 600px;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+        text-align: center;
+        margin-top: 0;
+    }
+
+    .question {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+
+    .option-btn {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: #e8e8e8;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        text-align: left;
+        transition: 0.2s;
+    }
+
+    .option-btn:hover {
+        background: #dcdcdc;
+    }
+
+    .correct {
+        background: #a4e6b1 !important;
+    }
+
+    .incorrect {
+        background: #f7a8a8 !important;
+    }
+
+    #feedback {
+        margin-top: 15px;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    #explanation {
+        margin-top: 8px;
+        background: #f0f0f0;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 15px;
+    }
+
+    #nextBtn, #restartBtn {
+        margin-top: 20px;
+        padding: 12px;
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    #nextBtn {
+        background: #007bff;
+        color: white;
+    }
+    
+    #nextBtn:hover {
+        background: #0063cc;
+    }
+
+    #restartBtn {
+        background: #444;
+        color: white;
+    }
+
+    #restartBtn:hover {
+        background: #222;
+    }
+
+    #progress {
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: #666;
+        text-align: right;
+    }
+</style>
+
+</head>
+
+<body>
+<div id="app">
+    <h1>Quiz Educativo</h1>
+
+    <div id="progress"></div>
+    <div id="question-container"></div>
+    <div id="feedback"></div>
+    <div id="explanation"></div>
+    <button id="nextBtn" style="display:none;">Siguiente</button>
+    <button id="restartBtn" style="display:none;">Reiniciar</button>
+</div>
+
+<script>
+// -----------------------------
+//  EJEMPLO DE PREGUNTAS
+// -----------------------------
+const questions = [
+  { question: "¿Cuál es la capital de Francia?", options: ["Madrid","Londres","París","Berlín"], answer: 2, explanation: "París es la capital de Francia." },
+  { question: "¿Cuál es el resultado de 5 + 7?", options: ["10","12","11","13"], answer: 1, explanation: "" },
+  { question: "¿Qué gas respiramos principalmente?", options: ["Oxígeno","Nitrógeno","Dióxido de carbono","Hidrógeno"], answer: 0, explanation: "El oxígeno es esencial para la respiración humana." },
+  { question: "¿Cuál es el animal doméstico más común?", options: ["Perro","Tigre","Elefante","Ballena"], answer: 0, explanation: "" },
+  { question: "¿Cómo se dice 'libro' en inglés?", options: ["Book","Libro","Livre","Buch"], answer: 0, explanation: "" },
+  { question: "¿Cuál es el símbolo químico del agua?", options: ["H2O","O2","CO2","NaCl"], answer: 0, explanation: "" },
+  { question: "¿Cuántos días tiene febrero en un año no bisiesto?", options: ["28","29","30","31"], answer: 0, explanation: "" },
+  { question: "¿Qué instrumento tiene teclas y se usa para tocar música?", options: ["Guitarra","Piano","Batería","Flauta"], answer: 1, explanation: "" },
+  { question: "¿En qué continente está Brasil?", options: ["Europa","Asia","América","África"], answer: 2, explanation: "" },
+  { question: "¿Qué significa el término 'ONU'?", options: ["Organización de Naciones Unidas","Oferta Nacional Unificada","Obra Nacional Urbana","Orden Nacional Única"], answer: 0, explanation: "" }
+];
+
+let currentIndex = 0;
+let score = 0;
+
+// -----------------------------
+//  MOSTRAR PREGUNTA
+// -----------------------------
+function loadQuestion() {
+    const q = questions[currentIndex];
+
+    document.getElementById("progress").textContent = 
+      `Pregunta ${currentIndex + 1} de ${questions.length}`;
+
+    document.getElementById("question-container").innerHTML = `
+        <div class="question">${q.question}</div>
+        ${q.options.map((opt, i) => 
+            `<button class="option-btn" onclick="selectOption(${i})">${opt}</button>`
+        ).join("")}
+    `;
+
+    document.getElementById("feedback").textContent = "";
+    document.getElementById("explanation").textContent = "";
+    document.getElementById("nextBtn").style.display = "none";
+}
+
+// -----------------------------
+//  SELECCIONAR RESPUESTA
+// -----------------------------
+function selectOption(i) {
+    const q = questions[currentIndex];
+    const buttons = document.querySelectorAll(".option-btn");
+
+    buttons.forEach(btn => btn.disabled = true); // bloquear
+
+    if (i === q.answer) {
+        buttons[i].classList.add("correct");
+        document.getElementById("feedback").textContent = "✔ ¡Correcto!";
+        score++;
+    } else {
+        buttons[i].classList.add("incorrect");
+        buttons[q.answer].classList.add("correct");
+        document.getElementById("feedback").textContent = "✘ Incorrecto";
+    }
+
+    if (q.explanation) {
+        document.getElementById("explanation").textContent = q.explanation;
+    }
+
+    document.getElementById("nextBtn").style.display = "block";
+}
+
+// -----------------------------
+//  SIGUIENTE PREGUNTA
+// -----------------------------
+document.getElementById("nextBtn").onclick = () => {
+    currentIndex++;
+    if (currentIndex < questions.length) {
+        loadQuestion();
+    } else {
+        showFinalScreen();
+    }
+};
+
+// -----------------------------
+//  FINAL DEL QUIZ
+// -----------------------------
+function showFinalScreen() {
+    document.getElementById("progress").textContent = "";
+    document.getElementById("question-container").innerHTML = `
+        <h2>¡Quiz finalizado!</h2>
+        <p>Puntaje: ${score} / ${questions.length}</p>
+    `;
+    document.getElementById("feedback").textContent = "";
+    document.getElementById("explanation").textContent = "";
+    document.getElementById("nextBtn").style.display = "none";
+    document.getElementById("restartBtn").style.display = "block";
+}
+
+document.getElementById("restartBtn").onclick = () => {
+    currentIndex = 0;
+    score = 0;
+    document.getElementById("restartBtn").style.display = "none";
+    loadQuestion();
+};
+
+// -----------------------------
+//  INICIAR
+// -----------------------------
+loadQuestion();
+</script>
+
+</body>
+</html>
