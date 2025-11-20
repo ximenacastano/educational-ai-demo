@@ -1,0 +1,11 @@
+Copyright (c) 2025 Ximena Castaño
+
+All rights reserved.
+
+This source code and associated files are proprietary and confidential.
+Unauthorized copying, modification, distribution, or use of this project,
+via any medium, is strictly prohibited without the express written
+permission of the author.
+
+For licensing, commercial use, or partnership opportunities,
+please contact: ximenacastano@gmail.com
