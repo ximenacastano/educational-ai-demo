@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Flashcards Pro — Demo (Profesor / Estudiante)</title>
+<style>
+  :root{
+    --bg: #f7f9fc;
+    --card: #fff;
+    --accent: #2563eb;
+    --muted: #6b7280;
+  }
+  *{box-sizing:border-box;font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+  body{margin:0;background:linear-gradient(180deg,#eef2ff 0%,var(--bg) 100%);min-height:100vh;padding:20px}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  h1{font-size:20px;margin:0;color:#0f172a}
+  .layout{display:grid;grid-template-columns:360px 1fr;gap:18px;margin-top:18px}
+  .panel{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+  label{display:block;margin-top:10px;font-size:14px;color:var(--muted)}
+  input[type=text], input[type=email], select, textarea{width:100%;padding:8px;border:1px solid #e6eef9;border-radius:8px;margin-top:6px}
+  textarea{min-height:120px}
+  button{padding:10px 12px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+  button.ghost{background:#eef2ff;color:var(--accent);border:1px solid #dbeafe}
+  .small{padding:8px;border-radius:8px;font-size:14px}
+  .activities-list{max-height:280px;overflow:auto;margin-top:10px}
+  .activity-item{padding:8px;border-radius:8px;margin-bottom:8px;background:#fbfdff;border:1px solid #eef5ff;display:flex;justify-content:space-between;align-items:center}
+  .center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+  .app-area{padding:16px}
+  .card-view{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .term-box{background:#fff;border-radius:12px;padding:24px;min-width:260px;min-height:90px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:600;box-shadow:0 6px 20px rgba(2,6,23,0.06)}
+  .translation{font-size:18px;color:var(--muted);min-height:26px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .meta{font-size:13px;color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .list{max-height:220px;overflow:auto;margin-top:8px}
+  .list .item{padding:8px;border-radius:8px;background:#fbfbfe;border:1px solid #f0f2ff;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+  .actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  footer{margin-top:16px;color:var(--muted);font-size:13px}
+  .hidden{display:none}
+  @media (max-width:980px){.layout{grid-template-columns:1fr;}.term-box{min-width:200px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Flashcards Pro — Demo</h1>
+    <div class="row">
+      <div class="meta">Modo:</div>
+      <select id="modeSelect" class="small">
+        <option value="student">Estudiante</option>
+        <option value="teacher">Profesor</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT PANEL: CREAR / ACTIVIDADES -->
+    <aside class="panel">
+      <strong>Crear / Gestionar actividad</strong>
+
+      <label for="teacherName">Nombre del docente</label>
+      <input id="teacherName" type="text" placeholder="Ej. María Pérez">
+
+      <label for="teacherEmail">Correo del docente (para recibir resultados)</label>
+      <input id="teacherEmail" type="email" placeholder="correo@ejemplo.edu">
+
+      <label for="topic">Tema / unidad</label>
+      <input id="topic" type="text" placeholder="Ej. Animales">
+
+      <label for="langPair">Par de idiomas</label>
+      <input id="langPair" type="text" placeholder="Inglés → Español">
+
+      <label for="level">Nivel</label>
+      <input id="level" type="text" placeholder="A1">
+
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1">
+          <label for="cardCount">Cantidad de tarjetas</label>
+          <input id="cardCount" type="text" placeholder="10">
+        </div>
+        <div style="width:120px">
+          <label for="includeImage">Imágenes</label>
+          <select id="includeImage"><option value="no">No</option><option value="yes">Sí</option></select>
+        </div>
+      </div>
+
+      <label for="includeAudio">Pronunciación (TTS)</label>
+      <select id="includeAudio"><option value="yes">Sí (Web Speech API)</option><option value="no">No</option></select>
+
+      <div style="margin-top:10px" class="row">
+        <button id="generateAI" class="small">Generar palabras con IA (prompt)</button>
+        <button id="newActivity" class="small ghost">Crear actividad vacía</button>
+      </div>
+
+      <label style="margin-top:12px">Importar tarjetas (formato JSON o texto estructurado)</label>
+      <textarea id="importBox" placeholder='Pegar JSON o formato: 
+TERM: ...
+TRANSLATION: ...
+EXAMPLE: ...
+IMAGE_PROMPT: ...
+AUDIO_PRONUNCIATION: ...
+'></textarea>
+      <div class="actions">
+        <button id="importBtn">Importar</button>
+        <button id="saveActivity">Guardar actividad</button>
+        <button id="exportActivity" class="ghost">Exportar JSON</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <strong>Actividades guardadas</strong>
+        <div class="activities-list" id="activitiesList"></div>
+        <div style="margin-top:8px" class="row">
+          <button id="clearActivities" class="ghost">Borrar todas (local)</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT PANEL: AREA APP -->
+    <main class="panel app-area" id="appArea">
+      <!-- Student login -->
+      <div id="studentLogin" class="center">
+        <h2>Entrar a actividad</h2>
+        <label for="studentName">Nombre del estudiante</label>
+        <input id="studentName" type="text" placeholder="Ej. Juan Gómez">
+        <label for="activityCode">Código de actividad</label>
+        <input id="activityCode" type="text" placeholder="Ej. ABX92 (deja vacío para seleccionar)">
+        <div class="row" style="margin-top:8px">
+          <button id="joinBtn">Entrar</button>
+          <button id="pickActivity" class="ghost">Elegir actividad</button>
+        </div>
+        <div style="margin-top:8px" class="meta">Si no hay código, usa "Elegir actividad" para cargar una guardada.</div>
+      </div>
+
+      <!-- Teacher view hint -->
+      <div id="teacherHint" class="hidden center">
+        <h2>Vista Profesor</h2>
+        <div class="meta">Crea actividades en el panel izquierdo. Guarda y comparte el ACTIVITY_CODE con tus estudiantes.</div>
+      </div>
+
+      <!-- Quiz area -->
+      <div id="quizArea" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="meta" id="activityInfo">Actividad: —</div>
+            <div class="meta" id="studentInfo">Estudiante: —</div>
+          </div>
+          <div class="meta" id="progressInfo">0 / 0</div>
+        </div>
+
+        <div style="margin-top:16px" class="card-view">
+          <div class="term-box" id="termBox">—</div>
+          <div class="translation" id="translationBox"> </div>
+          <div id="cardImageContainer"></div>
+
+          <div class="controls" style="margin-top:6px">
+            <button id="showTrans" class="ghost">Mostrar traducción</button>
+            <button id="playAudio" class="ghost">🔊 Reproducir</button>
+            <button id="nextCard" class="ghost">Siguiente</button>
+            <button id="prevCard" class="ghost">Anterior</button>
+            <button id="markCorrect" class="ghost">Marcar correcta</button>
+            <button id="markWrong" class="ghost">Marcar incorrecta</button>
+            <button id="endBtn" class="small" style="background:#10b981">Terminar</button>
+          </div>
+
+          <div style="margin-top:12px" class="row">
+            <div class="meta">Modo:</div>
+            <select id="displayMode" class="small">
+              <option value="flash">Flashcards (ver y mostrar)</option>
+              <option value="quiz">Evaluación (contar score)</option>
+            </select>
+          </div>
+
+          <div style="margin-top:14px;width:100%">
+            <strong>Lista de tarjetas</strong>
+            <div class="list" id="cardsList"></div>
+          </div>
+        </div>
+
+        <div id="resultArea" class="hidden" style="margin-top:12px">
+          <h3>Resultados</h3>
+          <div id="scoreText"></div>
+          <div style="margin-top:8px" class="actions">
+            <button id="downloadJSON" class="small">Descargar JSON</button>
+            <button id="downloadCSV" class="small ghost">Descargar CSV</button>
+            <button id="sendEmail" class="small">Enviar por correo</button>
+            <button id="saveLocal" class="small ghost">Guardar localmente</button>
+            <button id="restartQuiz" class="small">Volver a empezar</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <footer class="meta">
+    Tip: puedes generar tarjetas con IA pegando la salida del prompt maestro o importando JSON. La app usa localStorage para guardar actividades y resultados en tu navegador.
+  </footer>
+</div>
+
+<script>
+/* ----------------------------
+   FLASHCARDS PRO — Single File
+   - Usar localStorage para actividades y resultados
+   - Soporta import/export JSON, CSV
+   - Reproducción TTS (Web Speech API) y prompts para imágenes
+   - Autor: generado con ayuda de ChatGPT. Personaliza según necesites.
+   ----------------------------*/
+
+(function(){
+  // Helpers
+  const $ = id => document.getElementById(id);
+  const storageKey = 'flashcards_activities_v1';
+  const resultsKey = 'flashcards_results_v1';
+
+  function uid(len=5){
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let s='';
+    for(let i=0;i<len;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return s;
+  }
+
+  function nowISO(){ return new Date().toISOString(); }
+
+  function saveActivities(acts){
+    localStorage.setItem(storageKey, JSON.stringify(acts||[]));
+  }
+  function loadActivities(){
+    try{ return JSON.parse(localStorage.getItem(storageKey)) || []; } catch(e){ return []; }
+  }
+
+  function saveResult(result){
+    const arr = JSON.parse(localStorage.getItem(resultsKey) || '[]');
+    arr.push(result);
+    localStorage.setItem(resultsKey, JSON.stringify(arr));
+  }
+
+  // Initial sample activity
+  let activities = loadActivities();
+  if(activities.length===0){
+    const sample = {
+      id: uid(5),
+      teacher: 'Demo Prof.',
+      email: '',
+      topic: 'Vocabulario básico',
+      langPair: 'Inglés → Español',
+      level: 'A1',
+      cards: [
+        {term:'apple',translation:'manzana',example:'I eat an apple.',image_prompt:'A single red apple on a white table',audio_pron:'apple'},
+        {term:'dog',translation:'perro',example:'The dog runs fast.',image_prompt:'A friendly dog in a park',audio_pron:'dog'},
+        {term:'house',translation:'casa',example:'This is my house.',image_prompt:'A small cozy house on a hill',audio_pron:'house'}
+      ],
+      created: nowISO()
+    };
+    activities.push(sample);
+    saveActivities(activities);
+  }
+
+  // State
+  let currentActivity = null;
+  let currentStudent = null;
+  let currentIndex = 0;
+  let score = 0;
+  let answered = []; // track correctness per index
+
+  // UI refs
+  const modeSelect = $('modeSelect');
+
+  const teacherName = $('teacherName');
+  const teacherEmail = $('teacherEmail');
+  const topic = $('topic');
+  const langPair = $('langPair');
+  const level = $('level');
+  const cardCount = $('cardCount');
+  const includeImage = $('includeImage');
+  const includeAudio = $('includeAudio');
+  const generateAI = $('generateAI');
+  const newActivity = $('newActivity');
+  const importBox = $('importBox');
+  const importBtn = $('importBtn');
+  const saveActivityBtn = $('saveActivity');
+  const exportActivity = $('exportActivity');
+  const activitiesList = $('activitiesList');
+  const clearActivities = $('clearActivities');
+
+  const studentLogin = $('studentLogin');
+  const studentNameInput = $('studentName');
+  const activityCodeInput = $('activityCode');
+  const joinBtn = $('joinBtn');
+  const pickActivityBtn = $('pickActivity');
+
+  const teacherHint = $('teacherHint');
+  const quizArea = $('quizArea');
+  const activityInfo = $('activityInfo');
+  const studentInfo = $('studentInfo');
+  const progressInfo = $('progressInfo');
+  const termBox = $('termBox');
+  const translationBox = $('translationBox');
+  const cardImageContainer = $('cardImageContainer');
+  const showTrans = $('showTrans');
+  const playAudio = $('playAudio');
+  const nextCard = $('nextCard');
+  const prevCard = $('prevCard');
+  const markCorrect = $('markCorrect');
+  const markWrong = $('markWrong');
+  const endBtn = $('endBtn');
+  const displayMode = $('displayMode');
+  const cardsList = $('cardsList');
+
+  const resultArea = $('resultArea');
+  const scoreText = $('scoreText');
+  const downloadJSON = $('downloadJSON');
+  const downloadCSV = $('downloadCSV');
+  const sendEmail = $('sendEmail');
+  const saveLocal = $('saveLocal');
+  const restartQuiz = $('restartQuiz');
+
+  // Initialize UI
+  function renderActivities(){
+    activities = loadActivities();
+    activitiesList.innerHTML = '';
+    activities.forEach(a=>{
+      const div = document.createElement('div');
+      div.className='activity-item';
+      div.innerHTML = `<div>
+        <strong>${escape(a.topic)}</strong><div class="meta">${escape(a.teacher)} — ${a.id} — ${escape(a.langPair)}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button data-id="${a.id}" class="loadAct ghost small">Cargar</button>
+        <button data-id="${a.id}" class="delAct ghost small">Borrar</button>
+      </div>`;
+      activitiesList.appendChild(div);
+    });
+    // attach listeners
+    document.querySelectorAll('.loadAct').forEach(b=>b.addEventListener('click', e=>{
+      const id = e.target.dataset.id; loadActivityById(id); modeSelect.value='student'; onModeChange();
+    }));
+    document.querySelectorAll('.delAct').forEach(b=>b.addEventListener('click', e=>{
+      const id = e.target.dataset.id;
+      if(confirm('Borrar actividad localmente?')){ activities = activities.filter(x=>x.id!==id); saveActivities(activities); renderActivities(); }
+    }));
+  }
+
+  function escape(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Load activity to form (teacher)
+  function loadActivityToForm(act){
+    teacherName.value = act.teacher || '';
+    teacherEmail.value = act.email || '';
+    topic.value = act.topic || '';
+    langPair.value = act.langPair || '';
+    level.value = act.level || '';
+    cardCount.value = (act.cards||[]).length;
+  }
+
+  function createActivityFromForm(){
+    const act = {
+      id: uid(5),
+      teacher: teacherName.value || 'Profesor',
+      email: teacherEmail.value || '',
+      topic: topic.value || 'Tema',
+      langPair: langPair.value || '',
+      level: level.value || '',
+      cards: [],
+      created: nowISO()
+    };
+    return act;
+  }
+
+  // Import parsing: accept JSON array or the structured text
+  function parseImport(text){
+    text = text.trim();
+    // If JSON
+    try {
+      const j = JSON.parse(text);
+      if(Array.isArray(j)){
+        // expect objects with term/translation/example/image_prompt/audio_pron
+        return j.map(o=>({
+          term: o.term||o.TERM||'',
+          translation: o.translation||o.TRANSLATION||'',
+          example: o.example||o.EXAMPLE||'',
+          image_prompt: o.image_prompt||o.IMAGE_PROMPT||'',
+          audio_pron: o.audio_pron||o.AUDIO_PRONUNCIATION||''
+        })).filter(x=>x.term);
+      }
+    } catch(e){ /* not json */ }
+
+    // parse structured blocks
+    const lines = text.split(/\r?\n/);
+    const cards = [];
+    let cur = {};
+    lines.forEach(raw=>{
+      const l = raw.trim();
+      if(!l){
+        if(cur.term) cards.push(cur);
+        cur = {};
+        return;
+      }
+      const m = l.match(/^TERM:\s*(.+)$/i);
+      if(m){ cur.term = m[1].trim(); return; }
+      const m2 = l.match(/^TRANSLATION:\s*(.+)$/i);
+      if(m2){ cur.translation = m2[1].trim(); return; }
+      const m3 = l.match(/^EXAMPLE:\s*(.+)$/i);
+      if(m3){ cur.example = m3[1].trim(); return; }
+      const m4 = l.match(/^IMAGE_PROMPT:\s*(.+)$/i);
+      if(m4){ cur.image_prompt = m4[1].trim(); return; }
+      const m5 = l.match(/^AUDIO_PRONUNCIATION:\s*(.+)$/i);
+      if(m5){ cur.audio_pron = m5[1].trim(); return; }
+    });
+    if(cur.term) cards.push(cur);
+    return cards;
+  }
+
+  // Save activity
+  saveActivityBtn.addEventListener('click', ()=>{
+    const act = createActivityFromForm();
+    // try to import box if filled
+    const txt = importBox.value.trim();
+    if(txt){
+      const parsed = parseImport(txt);
+      if(parsed.length===0){ alert('No se detectaron tarjetas válidas en la importación.'); return; }
+      act.cards = parsed;
+    } else {
+      // create empty cards based on count
+      const n = parseInt(cardCount.value)||0;
+      for(let i=0;i<n;i++) act.cards.push({term:`Term ${i+1}`, translation:'', example:'', image_prompt:'', audio_pron:''});
+    }
+    activities.push(act);
+    saveActivities(activities);
+    renderActivities();
+    alert('Actividad guardada. Código: ' + act.id);
+  });
+
+  // Export current form as JSON
+  exportActivity.addEventListener('click', ()=>{
+    const act = createActivityFromForm();
+    act.cards = parseImport(importBox.value) || [];
+    const data = JSON.stringify(act, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `activity_${act.id||'export'}.json`; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // Clear all local activities
+  clearActivities.addEventListener('click', ()=>{
+    if(confirm('Borrar TODAS las actividades guardadas localmente?')){
+      localStorage.removeItem(storageKey);
+      activities = []; renderActivities();
+    }
+  });
+
+  // Import button
+  importBtn.addEventListener('click', ()=>{
+    const txt = importBox.value.trim();
+    if(!txt){ alert('Pega JSON o el texto estructurado en el área de importación.'); return; }
+    const parsed = parseImport(txt);
+    if(parsed.length===0){ alert('No se encontró ninguna tarjeta'); return; }
+    // Create activity from form data
+    const act = createActivityFromForm();
+    act.cards = parsed;
+    activities.push(act);
+    saveActivities(activities);
+    renderActivities();
+    alert('Importado y guardado como actividad. Código: ' + act.id);
+  });
+
+  // Generate AI (this will open a prompt window for the teacher with example prompt)
+  generateAI.addEventListener('click', ()=>{
+    const tema = topic.value || 'Tema';
+    const pair = langPair.value || 'Inglés → Español';
+    const lvl = level.value || 'A1';
+    const count = parseInt(cardCount.value)||10;
+    const prompt = `Genera ${count} tarjetas de vocabulario sobre "${tema}" para nivel ${lvl} (${pair}). Usa este formato exacto por tarjeta (una línea en blanco entre tarjetas):
+TERM: [palabra]
+TRANSLATION: [traducción]
+EXAMPLE: [oración simple]
+IMAGE_PROMPT: [prompt para generar imagen]
+AUDIO_PRONUNCIATION: [texto para pronunciar]
+
+No añadas explicaciones.`;
+    // Open a window with the prompt so teacher can paste into ChatGPT/Gemini
+    const w = window.open('', '_blank');
+    w.document.write('<pre style="white-space:pre-wrap;font-family:monospace;padding:20px">'+escape(prompt)+'</pre>');
+    w.document.title = 'Prompt para IA - Copiar y pegar';
+  });
+
+  // Load activity by id (for student quick load)
+  function loadActivityById(id){
+    const act = activities.find(a=>a.id===id);
+    if(!act) { alert('Actividad no encontrada'); return; }
+    currentActivity = act;
+    // set student view
+    showQuizArea();
+  }
+
+  // Mode change
+  modeSelect.addEventListener('change', onModeChange);
+  function onModeChange(){
+    const mode = modeSelect.value;
+    if(mode === 'teacher'){
+      studentLogin.classList.add('hidden');
+      teacherHint.classList.remove('hidden');
+      quizArea.classList.add('hidden');
+      // populate form with first activity if any
+      if(activities.length>0) loadActivityToForm(activities[0]);
+    } else {
+      studentLogin.classList.remove('hidden');
+      teacherHint.classList.add('hidden');
+      quizArea.classList.add('hidden');
+    }
+    renderActivities();
+  }
+  onModeChange();
+
+  // Student join
+  joinBtn.addEventListener('click', ()=>{
+    const sname = studentNameInput.value.trim();
+    const code = activityCodeInput.value.trim();
+    if(!sname){ alert('Ingresa el nombre del estudiante'); return; }
+    currentStudent = sname;
+    if(code){
+      const act = activities.find(a=>a.id===code);
+      if(!act){ alert('Código no encontrado'); return; }
+      currentActivity = act;
+      showQuizArea();
+    } else {
+      // list activities to pick
+      if(activities.length===0){ alert('No hay actividades guardadas'); return; }
+      // default pick first
+      currentActivity = activities[0];
+      showQuizArea();
+    }
+  });
+
+  pickActivityBtn.addEventListener('click', ()=>{
+    // show a simple selector modal (prompt)
+    const list = activities.map(a=>`${a.id} — ${a.topic} (${a.teacher})`).join('\\n');
+    const pick = prompt('Actividades:\\n' + list + '\\n\\nIngresa el código de actividad:');
+    if(pick){ loadActivityById(pick); currentStudent = studentNameInput.value.trim()||'Estudiante'; showQuizArea(); }
+  });
+
+  // Show quiz area
+  function showQuizArea(){
+    // reset
+    currentIndex = 0; score = 0; answered = [];
+    $('studentInfo').textContent = 'Estudiante: ' + (currentStudent||'—');
+    $('activityInfo').textContent = `Actividad: ${currentActivity.topic} — Código: ${currentActivity.id}`;
+    $('progressInfo').textContent = `0 / ${currentActivity.cards.length}`;
+    studentLogin.classList.add('hidden');
+    teacherHint.classList.add('hidden');
+    quizArea.classList.remove('hidden');
+    resultArea.classList.add('hidden');
+    updateCardsList();
+    renderCard();
+  }
+
+  function updateCardsList(){
+    cardsList.innerHTML = '';
+    currentActivity.cards.forEach((c,i)=>{
+      const el = document.createElement('div');
+      el.className='item';
+      el.innerHTML = `<div><strong>${escape(c.term)}</strong><div class="meta">${escape(c.translation)} — ${escape(c.example||'')}</div></div>
+      <div class="row"><button data-i="${i}" class="goto ghost small">Ir</button></div>`;
+      cardsList.appendChild(el);
+    });
+    document.querySelectorAll('.goto').forEach(b=>b.addEventListener('click', e=>{
+      currentIndex = Number(e.target.dataset.i);
+      renderCard();
+    }));
+  }
+
+  function renderCard(){
+    const c = currentActivity.cards[currentIndex];
+    termBox.textContent = c.term || '—';
+    translationBox.textContent = ''; // hide until show
+    // image
+    cardImageContainer.innerHTML = '';
+    if(c.image_url){
+      const img = document.createElement('img'); img.src = c.image_url; img.style.maxWidth='240px'; img.style.borderRadius='8px'; cardImageContainer.appendChild(img);
+    } else if(c.image_prompt){
+      // show prompt and copy button
+      const p = document.createElement('div'); p.style.marginTop='8px'; p.innerHTML = `<div class="meta">IMAGE_PROMPT:</div><div style="font-size:13px;background:#f8fafc;padding:8px;border-radius:8px">${escape(c.image_prompt)}</div><div style="margin-top:6px"><button id="copyImgPrompt" class="small ghost">Copiar prompt</button></div>`;
+      cardImageContainer.appendChild(p);
+      setTimeout(()=>{ const btn = $('copyImgPrompt'); if(btn) btn.addEventListener('click', ()=>{ navigator.clipboard.writeText(c.image_prompt); alert('Prompt copiado al portapapeles'); }); },50);
+    }
+
+    // audio button: speak term or audio_pron
+    playAudio.disabled = (includeAudio.value==='no');
+
+    $('progressInfo').textContent = `${currentIndex+1} / ${currentActivity.cards.length}`;
+
+    // show/hide controls depending on mode
+    if(displayMode.value === 'quiz'){
+      showTrans.style.display = 'none';
+      markCorrect.style.display = 'inline-block';
+      markWrong.style.display = 'inline-block';
+    } else {
+      showTrans.style.display = 'inline-block';
+      markCorrect.style.display = 'none';
+      markWrong.style.display = 'none';
+    }
+  }
+
+  // show translation
+  showTrans.addEventListener('click', ()=> {
+    const c = currentActivity.cards[currentIndex];
+    translationBox.textContent = c.translation || '';
+    // show example
+    if(c.example) translationBox.textContent += ' — ' + c.example;
+  });
+
+  // audio TTS
+  playAudio.addEventListener('click', ()=>{
+    if(!window.speechSynthesis){ alert('TTS no disponible en este navegador'); return; }
+    const c = currentActivity.cards[currentIndex];
+    const text = c.audio_pron || c.term || '';
+    const utter = new SpeechSynthesisUtterance(text);
+    // optionally set language based on pair
+    const lp = (currentActivity.langPair||'').split('->')[0] || (currentActivity.langPair||'').split('→')[0] || '';
+    if(lp) utter.lang = lp.trim().toLowerCase().startsWith('es') ? 'es-ES' : undefined;
+    speechSynthesis.cancel(); speechSynthesis.speak(utter);
+  });
+
+  // next / prev
+  nextCard.addEventListener('click', ()=>{
+    if(currentIndex < currentActivity.cards.length-1) currentIndex++;
+    renderCard();
+  });
+  prevCard.addEventListener('click', ()=>{
+    if(currentIndex > 0) currentIndex--;
+    renderCard();
+  });
+
+  // mark correct/incorrect (quiz mode)
+  markCorrect.addEventListener('click', ()=>{ answered[currentIndex] = true; score++; nextAuto(); });
+  markWrong.addEventListener('click', ()=>{ answered[currentIndex] = false; nextAuto(); });
+  function nextAuto(){ if(currentIndex < currentActivity.cards.length-1){ currentIndex++; renderCard(); } else finishQuiz(); }
+
+  // End
+  endBtn.addEventListener('click', ()=>{ if(displayMode.value==='quiz') finishQuiz(); else {
+    // For flashcard mode, offer to export student's progress or just finish
+    if(confirm('Terminar la revisión de tarjetas?')) finishQuiz();
+  }});
+
+  function finishQuiz(){
+    // compute score if not in quiz mode: compute from answered
+    if(displayMode.value !== 'quiz'){
+      // count from answered array (if empty, score=0)
+      score = (answered.filter(Boolean) || []).length;
+    }
+    // create result object
+    const result = {
+      activity_code: currentActivity.id,
+      student_name: currentStudent,
+      topic: currentActivity.topic,
+      teacher: currentActivity.teacher,
+      date: nowISO(),
+      score: score,
+      total: currentActivity.cards.length,
+      correct_indices: answered.map((v,i)=>v?i:-1).filter(x=>x>=0),
+      wrong_indices: answered.map((v,i)=>v? -1:(v===false?i:-1)).filter(x=>x>=0)
+    };
+    // show results area
+    resultArea.classList.remove('hidden');
+    $('scoreText').textContent = `Puntaje: ${score} / ${currentActivity.cards.length}`;
+    // store result if teacher wants local store
+    saveResult(result);
+    // prepare download buttons
+    downloadJSON.onclick = ()=> {
+      const blob = new Blob([JSON.stringify(result, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `result_${currentActivity.id}_${currentStudent||'student'}.json`; a.click();
+      URL.revokeObjectURL(a.href);
+    };
+    downloadCSV.onclick = ()=> {
+      // simple CSV
+      const rows = [
+        ['activity_code','student_name','topic','teacher','date','score','total'].join(','),
+        [result.activity_code, result.student_name, result.topic, result.teacher, result.date, result.score, result.total].map(s=>`"${String(s).replace(/"/g,'""')}"`).join(',')
+      ];
+      const blob = new Blob([rows.join('\\n')], {type:'text/csv'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `result_${currentActivity.id}_${currentStudent||'student'}.csv`; a.click();
+      URL.revokeObjectURL(a.href);
+    };
+    sendEmail.onclick = ()=> {
+      const teacherEmail = currentActivity.email || teacherEmail.value || '';
+      const subject = encodeURIComponent(`Resultados actividad – ${currentActivity.topic} – ${currentStudent}`);
+      const body = encodeURIComponent(`Nombre del estudiante: ${currentStudent}
+Tema: ${currentActivity.topic}
+Profesor: ${currentActivity.teacher}
+Código de actividad: ${currentActivity.id}
+Fecha: ${result.date}
+Puntaje: ${result.score} / ${result.total}
+Correctas: ${result.correct_indices.join(', ')}
+Incorrectas: ${result.wrong_indices.join(', ')}
+
+Adjunto: puedes descargar el JSON/CSV en la app.`);
+      const mailto = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+      window.location.href = mailto;
+    };
+    saveLocal.onclick = ()=> {
+      saveResult(result);
+      alert('Resultado guardado localmente en el navegador.');
+    };
+    restartQuiz.onclick = ()=> {
+      // reset and go back to student login or start again
+      currentIndex = 0; score = 0; answered = []; resultArea.classList.add('hidden'); renderCard();
+    };
+
+    // hide quiz controls
+    // quizArea stays visible but controls remain
+  }
+
+  // Utility: load first activity into teacher form when selecting teacher mode
+  renderActivities();
+
+  // load default activity into form on start
+  if(activities.length>0) loadActivityToForm(activities[0]);
+
+  // allow teacher to load activity into form by clicking an item (double-click)
+  activitiesList.addEventListener('dblclick', (e)=>{ const parent = e.target.closest('.activity-item'); if(!parent) return; const btn = parent.querySelector('.loadAct'); if(btn) btn.click(); });
+
+  // Allow teacher to edit an activity: quick load
+  activitiesList.addEventListener('click', (e)=>{
+    if(e.target.classList.contains('loadAct')){ /* handled above */ }
+  });
+
+  // Extra: load activity by code on page load if provided in URL ?code=XXXX
+  (function checkURL(){
+    const p = new URLSearchParams(location.search);
+    const code = p.get('code');
+    if(code){
+      modeSelect.value = 'student'; onModeChange();
+      activityCodeInput.value = code;
+      alert('Código detectado en URL. Ingresa tu nombre y presiona Entrar.');
+    }
+  })();
+
+})();
+</script>
+</body>
+</html>
